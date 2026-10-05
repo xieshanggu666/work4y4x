@@ -4,23 +4,12 @@ from pydantic import BaseModel, Field
 from typing import List, Optional
 
 from app.core.database import SessionLocal
+from app.schemas import Action, validate_actions
 from app.services import physics
 from app.services import scores as scores_svc
 from app.services.levels import LEVELS, LEVEL_BY_ID
 
 router = APIRouter(prefix="/api")
-
-_PLANET_IDS = {b["id"] for b in physics.BODIES if b["id"] != "sun"}
-_ACTION_TYPES = {"coast", "burn", "slingshot"}
-
-
-class Action(BaseModel):
-    type: str
-    days: Optional[float] = None
-    angle: Optional[float] = None
-    dv: Optional[float] = None
-    planet_id: Optional[str] = None
-    b: Optional[float] = None
 
 
 class SimRequest(BaseModel):
@@ -39,24 +28,6 @@ class ScoreRequest(BaseModel):
     stars: Optional[int] = Field(default=None, ge=0, le=3)
     fuel_used: float = 0.0
     elapsed_days: float = 0.0
-
-
-def _validate(actions: List[Action]) -> List[dict]:
-    out = []
-    for a in actions:
-        if a.type not in _ACTION_TYPES:
-            raise HTTPException(400, f"未知动作类型: {a.type}")
-        if a.type == "coast":
-            out.append({"type": "coast", "days": max(0.0, a.days or 0.0)})
-        elif a.type == "burn":
-            out.append({"type": "burn", "angle": float(a.angle or 0.0),
-                        "dv": max(0.0, min(0.02, a.dv or 0.0))})
-        elif a.type == "slingshot":
-            if a.planet_id not in _PLANET_IDS:
-                raise HTTPException(400, f"未知行星: {a.planet_id}")
-            out.append({"type": "slingshot", "planet_id": a.planet_id,
-                        "b": max(-0.2, min(0.2, a.b or 0.0))})
-    return out
 
 
 def _sim_response(lv, actions, with_stars: bool):
@@ -102,7 +73,7 @@ def preview(req: SimRequest):
     lv = LEVEL_BY_ID.get(req.level_id)
     if lv is None:
         raise HTTPException(404, "关卡不存在")
-    return _sim_response(lv, _validate(req.actions), with_stars=False)
+    return _sim_response(lv, validate_actions(req.actions), with_stars=False)
 
 
 @router.post("/run")
@@ -110,7 +81,7 @@ def run(req: SimRequest):
     lv = LEVEL_BY_ID.get(req.level_id)
     if lv is None:
         raise HTTPException(404, "关卡不存在")
-    actions = _validate(req.actions)
+    actions = validate_actions(req.actions)
     resp = _sim_response(lv, actions, with_stars=True)
     # 执行档案落库：成绩记录通过 run_id 关联到本次执行，实现可溯源与回放
     with SessionLocal() as db:

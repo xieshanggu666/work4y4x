@@ -39,6 +39,7 @@ window.LevelSelect = {
         </div>
       </div>
       <div class="topbar-right">
+        <button class="btn ghost community-btn" @click="$emit('challenges')">🌐 社区航线挑战</button>
         <span class="star-sum" title="总星数">★ {{ totalStars }} / 15</span>
       </div>
     </header>
