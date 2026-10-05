@@ -98,3 +98,21 @@ LEVELS = [
 ]
 
 LEVEL_BY_ID = {lv["id"]: lv for lv in LEVELS}
+
+
+def challenge_level(challenge, version_row) -> dict:
+    """把挑战版本快照组装成物理引擎可用的关卡对象。
+
+    引擎只依赖 milestones / budget_dv / t_max 三个字段结算（见 physics.integrate），
+    社区关卡与内置关卡共用同一套结算与评分口径。
+    """
+    import json
+    return {
+        "id": f"c{challenge.id}v{version_row.version}",
+        "name": f"{challenge.title} · v{version_row.version}",
+        "brief": challenge.brief,
+        "milestones": json.loads(version_row.milestones_json),
+        "budget_dv": version_row.budget_dv,
+        "t_max": version_row.t_max,
+        "hint": version_row.hint,
+    }

@@ -9,6 +9,7 @@ window.LevelSelect = {
       return this.starOf(id - 1) >= 1;
     },
     enter(lv) { this.$emit("enter", lv.id); },
+    openChallenges() { this.$emit("challenges"); },
   },
   computed: {
     levels() {
@@ -39,6 +40,7 @@ window.LevelSelect = {
         </div>
       </div>
       <div class="topbar-right">
+        <button class="btn ghost ch-entry" @click="openChallenges">🌐 社区航线挑战</button>
         <span class="star-sum" title="总星数">★ {{ totalStars }} / 15</span>
       </div>
     </header>
